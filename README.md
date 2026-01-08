@@ -90,7 +90,7 @@ The project integrates **hardware design, embedded systems, sensors, and communi
 
 ## 📄 Documentation
 📘 **Full Technical Report:**  
-[Oxygen Concentrator Report](docs/Oxygen_Concentrator_Report.pdf)
+[Oxygen Concentrator Report](docs/Oxygen Concentrator Report.pdf)
 
 ---
 
