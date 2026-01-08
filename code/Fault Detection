@@ -1,0 +1,576 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+// Set the LCD address to 0x27 or 0x3f for a 16 chars and 2 line display
+LiquidCrystal_I2C lcd(0x27, 20, 4);
+#include <Adafruit_ADS1X15.h>
+Adafruit_ADS1115 ads;
+#include <SoftwareSerial.h>
+#include <TinyGPSPlus.h>
+SoftwareSerial SIM900A(2,3);
+static const int RXPin = 0, TXPin = 1;
+static const uint32_t GPSBaud = 9600;
+#define BUTTON_PIN 5
+TinyGPSPlus gps;
+SoftwareSerial ss(RXPin, TXPin);
+
+void SendMessage();
+void displayInfo();
+void RecieveMessage();
+void MakeCall();
+void RedialCall();
+void gsmsetup();
+void gsmloop();
+void puritysetup();
+void purityloop();
+#include <SPI.h>
+//Adafruit_ADS1115 ads;
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>/
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 32 // OLED display height, in pixels
+#define OLED_RESET    -1 // 4 // Reset pin # (or -1 if sharing Arduino reset pin)
+#define SCREEN_ADDRESS 0x3C///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+float Voltage = 0.0;
+float Oxy = 0.0;
+#define BUTTON_PIN1 4
+void purity();
+void drawLine();
+void oxysetuo();
+void oxyloop();
+void heart_beat();
+void display_data();
+void drawLine(); 
+void onBeatDetected();
+
+
+
+
+#include "MAX30100_PulseOximeter.h"
+#define ENABLE_MAX30100 1
+
+#if ENABLE_MAX30100
+#define REPORTING_PERIOD_MS     5000
+
+PulseOximeter pox;
+#endif
+uint32_t tsLastReport = 0;
+const int buttonPin = 12;
+int xPos = 0;
+void onBeatDetected()
+{
+  Serial.println("Beat!");
+  heart_beat(&xPos);
+}
+
+
+
+
+
+
+void setup(){
+  
+  pinMode(BUTTON_PIN1, INPUT_PULLUP);
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  //gsmsetup();
+  //puritysetup();
+  ads.setGain(GAIN_SIXTEEN);
+  Serial.begin(9600);
+  ads.begin();
+  
+  delay(1000);
+  SIM900A.begin(9600);   // Setting the baud rate of GSM Module  
+  //Serial.begin(9600);    // Setting the baud rate of Serial Monitor (Arduino)
+  Serial.println ("SIM900A Ready");
+  delay(1000);
+  ss.begin(GPSBaud);
+  display.begin();
+
+  Serial.println(F("Gps connected"));
+  Serial.print(F("Testing TinyGPSPlus library v. ")); Serial.println(TinyGPSPlus::libraryVersion());
+  Serial.println(F("by Ahsan"));
+  display.clearDisplay();
+  display.setCursor(0,0);
+  display.setTextColor(WHITE);
+  display.print("Oxygen Analyser with");
+  display.setCursor(0,10);
+  display.print("fault notification");
+  display.setCursor(0,20);
+  display.print("by Ahsan");
+  Serial.println();
+  display.display();
+  delay(3000);
+
+
+
+
+  {
+  Serial.println("SSD1306 128x64 OLED TEST");
+  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;); // Don't proceed, loop forever
+  }
+  // Show initial display buffer contents on the screen --
+  // the library initializes this with an Adafruit splash screen.
+  //display.display();
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(20, 18);
+  // Display static text
+  display.print("Pulse OxiMeter");
+  int temp1 = 0;
+  int temp2 = 40;
+  int temp3 = 80;
+  heart_beat(&temp1);
+  heart_beat(&temp2);
+  heart_beat(&temp3);
+  xPos = 0;
+  display.display();
+  delay(2000); // Pause for 2 seconds
+  display.cp437(true);
+  display.clearDisplay();
+  Serial.print("Initializing pulse oximeter..");
+#if ENABLE_MAX30100
+  // Initialize the PulseOximeter instance
+  // Failures are generally due to an improper I2C wiring, missing power supply
+  // or wrong target chip
+  if (!pox.begin()) {
+    Serial.println("FAILED");
+    for (;;);
+  } else {
+    Serial.println("SUCCESS");
+  }
+  // The default current for the IR LED is 50mA and it could be changed
+  //   by uncommenting the following line. Check MAX30100_Registers.h for all the
+  //   available options.
+
+  if (digitalRead(buttonPin) == LOW)
+  {
+  pox.setIRLedCurrent(MAX30100_LED_CURR_7_6MA);
+  // Register a callback for the beat detection
+  pox.setOnBeatDetectedCallback(onBeatDetected);
+  display_data(0, 0);
+  }
+#endif
+}
+
+ 
+  
+  
+  }
+
+
+
+  void loop(){
+    byte buttonState = digitalRead(BUTTON_PIN);
+    byte buttonState1 = digitalRead(BUTTON_PIN1);
+
+    if (buttonState == LOW) {
+      purityloop();
+      delay(2000);
+      oxyloop();
+      
+    }
+    
+    if (buttonState1 == LOW) {
+      gsmloop();
+      delay(2000);
+      oxyloop();
+    }
+    
+    
+    
+    
+    
+    }
+
+
+//void gsmsetup()
+//{
+ // SIM900A.begin(9600);   // Setting the baud rate of GSM Module  
+ // Serial.begin(9600);    // Setting the baud rate of Serial Monitor (Arduino)
+ // Serial.println ("SIM900A Ready");
+ // delay(1000);
+ // ss.begin(GPSBaud);
+
+ // Serial.println(F("Gps connected"));
+ // Serial.print(F("Testing TinyGPSPlus library v. ")); Serial.println(TinyGPSPlus::libraryVersion());
+  //Serial.println(F("by Ahsan"));
+ // Serial.println();
+ // delay(1000);
+//}
+
+void gsmloop()
+{
+
+  //byte buttonState = digitalRead(BUTTON_PIN);
+
+ // if (buttonState1 == LOW) {
+  while (ss.available() > 0)
+    if (gps.encode(ss.read()))
+      displayInfo();
+
+  if (millis() > 5000 && gps.charsProcessed() < 10)
+  {
+    Serial.println(F("No GPS detected: check wiring."));
+    while(true);
+  }
+  }
+//}
+
+
+
+
+void displayInfo()
+{
+  Serial.println("Fetching Location...");
+  Serial.print(F("Location: ")); 
+  if (gps.location.isValid() || (gps.date.isValid() && gps.time.isValid())  )
+  {
+    {
+    Serial.print(gps.location.lat(), 6);
+    Serial.print(F(","));
+    Serial.println(gps.location.lng(), 6);
+    delay(1000);
+    SendMessage();
+    
+  }
+  
+  Serial.print(F("  Date/Time: "));
+  if (gps.date.isValid())
+  {
+    Serial.print(gps.date.month());
+    Serial.print(F("/"));
+    Serial.print(gps.date.day());
+    Serial.print(F("/"));
+    Serial.print(gps.date.year());
+  }
+  
+
+  Serial.print(F(" "));
+  {
+    if (gps.time.hour() < 10) Serial.print(F("0"));
+    Serial.print(gps.time.hour());
+    Serial.print(F(":"));
+    if (gps.time.minute() < 10) Serial.print(F("0"));
+    Serial.print(gps.time.minute());
+    Serial.print(F(":"));
+    if (gps.time.second() < 10) Serial.print(F("0"));
+    Serial.print(gps.time.second());
+    Serial.print(F("."));
+    if (gps.time.centisecond() < 10) Serial.print(F("0"));
+    Serial.println(gps.time.centisecond());
+  }
+}
+  else
+  {
+    Serial.print(F("INVALID"));
+  }
+
+  Serial.println();
+}
+
+
+
+
+
+
+
+void SendMessage()
+{
+  
+  SIM900A.println("AT+CMGF=1");    //Sets the GSM Module in Text Mode
+  delay(1000);
+  //Serial.println ("Set Number to send sms");
+  SIM900A.println("AT+CMGS=\"+918801058225\"\r"); //Mobile phone number to send message
+  delay(1000);
+  Serial.print("Setting location to send");
+  delay(100);
+  //Serial.print("Location: Lat: ");
+       // Serial.print(gps.location.lat(), 6);
+        //Serial.print(", Lon: ");
+        //Serial.print(gps.location.lng(), 6);
+        SIM900A.print("Location: Lat: ");
+        SIM900A.print(gps.location.lat(), 6);
+        SIM900A.print(", Lon: ");
+        SIM900A.println(gps.location.lng(), 6);
+        //SIM900A.println((char)26);// ASCII code of CTRL+Z
+ // delay(1000);
+
+        SIM900A.print("Date:");
+        SIM900A.print(gps.date.month());
+        SIM900A.print("/");
+        SIM900A.print(gps.date.day());
+        SIM900A.print("/");
+        SIM900A.println(gps.date.year());
+        SIM900A.print("Time:");
+        SIM900A.print(gps.time.hour());
+        SIM900A.print(":");
+        SIM900A.print(gps.time.minute());
+        SIM900A.print(":");
+        SIM900A.print(gps.time.second());
+        SIM900A.print(":");
+        SIM900A.println(gps.time.centisecond());
+        int16_t adc0; // 16 bits ADC read of input A0
+        adc0 = ads.readADC_SingleEnded(0);
+        Voltage = (float(adc0) * 0.1875 /15.4);
+        Oxy = float (((Voltage *1.22)/.9));
+  
+        SIM900A.print("Oxygen Purity:");SIM900A.print(Oxy);SIM900A.print("%");
+
+      
+        
+  SIM900A.println((char)26);// ASCII code of CTRL+Z
+  delay(1000);
+  Serial.println ("Location has been sent");
+  delay(1000);
+}
+
+
+ void RecieveMessage()
+{
+  Serial.println ("SIM900A Membaca SMS");
+  delay (1000);
+  SIM900A.println("AT+CNMI=2,2,0,0,0"); // AT Command to receive a live SMS
+  delay(1000);
+  
+ }
+
+
+void MakeCall()
+{
+  SIM900A.println("ATD+918801058225;"); // ATDxxxxxxxxxx; -- watch out here for semicolon at the end!!
+  Serial.println("Calling  "); // print response over serial port
+  delay(1000);
+}
+
+
+void RedialCall()
+{
+  SIM900A.println("ATDL");
+  Serial.println("Redialing");
+  delay(1000);
+}
+
+
+//void puritysetup(void)
+//{
+  //ads.setGain(GAIN_SIXTEEN);
+  //Serial.begin(9600);
+  //ads.begin();
+  //pinMode(BUTTON_PIN, INPUT_PULLUP);
+  //display.begin();
+  
+
+  
+//}
+
+
+
+void purityloop()
+{
+      purity();
+  }
+
+
+
+
+
+
+void purity(void)
+{
+int16_t adc0; // 16 bits ADC read of input A0
+adc0 = ads.readADC_SingleEnded(0);
+Voltage = (float(adc0) * 0.1875 /15.4);
+Oxy = float ((Voltage - 21)/0.9);
+  Serial.print("AIN0: ");
+  Serial.print(adc0);
+  Serial.print("\tVoltage: ");
+  Serial.println(Voltage, 2);
+  Serial.println();  
+  display.clearDisplay();
+  display.setCursor(0,0);
+  //display.setTextSize(2);
+  display.setTextColor(WHITE);
+  display.println("Oxygen Purity:");display.print(Oxy);display.print("%");
+  display.display();
+  delay(2000);
+
+}
+
+//void oxysetup()
+
+void oxyloop()
+{
+#if ENABLE_MAX30100
+  // Make sure to call update as fast as possible
+  pox.update();
+  int bpm = 0;
+  int spo2 = 0;
+  // Asynchronously dump heart rate and oxidation levels to the serial
+  // For both, a value of 0 means "invalid"
+  if (millis() - tsLastReport > REPORTING_PERIOD_MS) {
+    //Serial.print("Heart rate:");
+    bpm = pox.getHeartRate();
+    spo2 = pox.getSpO2();
+    Serial.println(bpm);
+    //Serial.print("bpm / SpO2:");
+    Serial.println(spo2);
+    //Serial.println("%");
+    tsLastReport = millis();
+    display_data(bpm, spo2);
+  }
+#endif
+  drawLine(&xPos);
+}
+void display_data(int bpm, int spo2) {
+ 
+display.fillRect(0, 18, 127, 15, BLACK);
+  //if(bpm ==0 && spo2==0){
+ //    display.setTextSize(1);
+ // display.setTextColor(WHITE);
+  //display.setCursor(0, 18);
+  // Display static text
+ // display.print("Fingure Out");
+  //}
+  display.fillRect(0, 18, 127, 15, BLACK);
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(0, 18);
+  // Display static text
+  display.print("BPM ");
+  display.setTextSize(2);
+  display.print(bpm);
+  display.display();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(64, 18);
+  // Display static text
+  display.print("Spo2% ");
+  display.setTextSize(2);
+  display.println(spo2);
+  display.display();
+}
+void drawLine(int *x_pos) {
+  // Draw a single pixel in white
+  display.drawPixel(*x_pos, 8, WHITE);
+  display.drawPixel((*x_pos)++, 8, WHITE);
+  display.drawPixel((*x_pos)++, 8, WHITE);
+  display.drawPixel((*x_pos)++, 8, WHITE);
+  display.drawPixel((*x_pos), 8, BLACK);  // -----
+  //Serial.println(*x_pos);
+  display.fillRect(*x_pos, 0, 31, 16, BLACK);
+  display.display();
+  //delay(1);
+  if (*x_pos >= SCREEN_WIDTH) {
+    *x_pos = 0;
+  }
+}
+void heart_beat(int *x_pos) {
+  /************************************************/
+  //display.clearDisplay();
+  display.fillRect(*x_pos, 0, 30, 15, BLACK);
+  // Draw a single pixel in white
+  display.drawPixel(*x_pos + 0, 8, WHITE);
+  display.drawPixel(*x_pos + 1, 8, WHITE);
+  display.drawPixel(*x_pos + 2, 8, WHITE);
+  display.drawPixel(*x_pos + 3, 8, WHITE);
+  display.drawPixel(*x_pos + 4, 8, BLACK); // -----
+  //display.display();
+  //delay(1);
+  display.drawPixel(*x_pos + 5, 7, WHITE);
+  display.drawPixel(*x_pos + 6, 6, WHITE);
+  display.drawPixel(*x_pos + 7, 7, WHITE); // .~.
+  //display.display();
+  //delay(1);
+  display.drawPixel(*x_pos + 8, 8, WHITE);
+  display.drawPixel(*x_pos + 9, 8, WHITE); // --
+  //display.display();
+  //delay(1);
+  /******************************************/
+  display.drawPixel(*x_pos + 10, 8, WHITE);
+  display.drawPixel(*x_pos + 10, 9, WHITE);
+  display.drawPixel(*x_pos + 11, 10, WHITE);
+  display.drawPixel(*x_pos + 11, 11, WHITE);
+  //display.display();
+  //delay(1);
+  /******************************************/
+  display.drawPixel(*x_pos + 12, 10, WHITE);
+  display.drawPixel(*x_pos + 12, 9, WHITE);
+  display.drawPixel(*x_pos + 12, 8, WHITE);
+  display.drawPixel(*x_pos + 12, 7, WHITE);
+  //display.display();
+  //delay(1);
+  display.drawPixel(*x_pos + 13, 6, WHITE);
+  display.drawPixel(*x_pos + 13, 5, WHITE);
+  display.drawPixel(*x_pos + 13, 4, WHITE);
+  display.drawPixel(*x_pos + 13, 3, WHITE);
+  //display.display();
+  //delay(1);
+  display.drawPixel(*x_pos + 14, 2, WHITE);
+  display.drawPixel(*x_pos + 14, 1, WHITE);
+  display.drawPixel(*x_pos + 14, 0, WHITE);
+  display.drawPixel(*x_pos + 14, 0, WHITE);
+  //display.display();
+  //delay(1);
+  /******************************************/
+  display.drawPixel(*x_pos + 15, 0, WHITE);
+  display.drawPixel(*x_pos + 15, 1, WHITE);
+  display.drawPixel(*x_pos + 15, 2, WHITE);
+  display.drawPixel(*x_pos + 15, 3, WHITE);
+  //display.display();
+  //delay(1);
+  display.drawPixel(*x_pos + 15, 4, WHITE);
+  display.drawPixel(*x_pos + 15, 5, WHITE);
+  display.drawPixel(*x_pos + 16, 6, WHITE);
+  display.drawPixel(*x_pos + 16, 7, WHITE);
+  //display.display();
+  //delay(1);
+  display.drawPixel(*x_pos + 16, 8, WHITE);
+  display.drawPixel(*x_pos + 16, 9, WHITE);
+  display.drawPixel(*x_pos + 16, 10, WHITE);
+  display.drawPixel(*x_pos + 16, 11, WHITE);
+  //display.display();
+  //delay(1);
+  display.drawPixel(*x_pos + 17, 12, WHITE);
+  display.drawPixel(*x_pos + 17, 13, WHITE);
+  display.drawPixel(*x_pos + 17, 14, WHITE);
+  display.drawPixel(*x_pos + 17, 15, WHITE);
+  //display.display();
+  //delay(1);
+  display.drawPixel(*x_pos + 18, 15, WHITE);
+  display.drawPixel(*x_pos + 18, 14, WHITE);
+  display.drawPixel(*x_pos + 18, 13, WHITE);
+  display.drawPixel(*x_pos + 18, 12, WHITE);
+  //display.display();
+  //delay(1);
+  display.drawPixel(*x_pos + 19, 11, WHITE);
+  display.drawPixel(*x_pos + 19, 10, WHITE);
+  display.drawPixel(*x_pos + 19, 9, WHITE);
+  display.drawPixel(*x_pos + 19, 8, WHITE);
+  //display.display();
+  //delay(1);
+  /****************************************************/
+  display.drawPixel(*x_pos + 20, 8, WHITE);
+  display.drawPixel(*x_pos + 21, 8, WHITE);
+  //display.display();
+  //delay(1);
+  /****************************************************/
+  display.drawPixel(*x_pos + 22, 7, WHITE);
+  display.drawPixel(*x_pos + 23, 6, WHITE);
+  display.drawPixel(*x_pos + 24, 6, WHITE);
+  display.drawPixel(*x_pos + 25, 7, WHITE);
+  //display.display();
+  //delay(1);
+  /************************************************/
+  display.drawPixel(*x_pos + 26, 8, WHITE);
+  display.drawPixel(*x_pos + 27, 8, WHITE);
+  display.drawPixel(*x_pos + 28, 8, WHITE);
+  display.drawPixel(*x_pos + 29, 8, WHITE);
+  display.drawPixel(*x_pos + 30, 8, WHITE); // -----
+  *x_pos = *x_pos + 30;
+  display.display();
+  delay(1);
+}
