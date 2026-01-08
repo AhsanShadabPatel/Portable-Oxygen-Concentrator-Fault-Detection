@@ -1,11 +1,11 @@
-🫁 Portable Oxygen Concentrator with Fault Detection
-📌 Overview
+Portable Oxygen Concentrator with Fault Detection
+
 
 This project presents the design and implementation of a portable oxygen concentrator based on Pressure Swing Adsorption (PSA) combined with an oxygen analyzer and fault detection system. The system is intended for medical and emergency use, especially in regions with limited access to oxygen cylinders or stable electricity.
 
 The project integrates hardware design, embedded systems, sensors, and communication modules to ensure safe and reliable oxygen delivery.
 
-⚙️ System Architecture
+System Architecture
 
 Main Components:
 
@@ -25,7 +25,7 @@ OLED display
 
 MAX30100 (SpO₂ & heart rate)
 
-🔄 Pressure Swing Adsorption (PSA) Cycle
+Pressure Swing Adsorption (PSA) Cycle
 
 Process Summary:
 
@@ -40,7 +40,7 @@ Cyclic operation ensures continuous oxygen output
 Oxygen concentration achieved: 30% – 80%
 Flow rate suitable for single-patient use
 
-🧪 Oxygen Analyzer & Calibration
+Oxygen Analyzer & Calibration
 
 Medical-grade OOM202 sensor
 
@@ -56,7 +56,7 @@ Ambient air (20.95% O₂)
 
 Helium gas (0% O₂)
 
-🚨 Fault Detection & Alert System
+Fault Detection & Alert System
 
 Continuous monitoring of:
 
@@ -76,7 +76,7 @@ Sensor failure
 
 System fault
 
-💻 Software Implementation
+Software Implementation
 
 Platform: Arduino
 
@@ -92,9 +92,9 @@ GSM SMS alert using AT commands
 
 GPS-based location reporting
 
-📂 Code available in /software
+Code available in /software
 
-🧠 Key Engineering Skills Demonstrated
+Key Engineering Skills Demonstrated
 
 Embedded systems (Arduino, I2C, ADC)
 
@@ -110,12 +110,12 @@ Fault detection & alert systems
 
 GSM/GPS communication
 
-📄 Documentation
+Documentation
 
-📘 Full technical report:
+Full technical report:
 Oxygen_Concentrator_Report.pdf
 
-🔮 Future Improvements
+Future Improvements
 
 Closed-loop oxygen purity control
 
